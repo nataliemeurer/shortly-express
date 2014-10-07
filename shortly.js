@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -82,27 +83,56 @@ function(req, res) {
 app.get('/signup', function(req, res){
   res.render('signup');
 });
-
 app.post('/signup', function(req, res){
   // get info from the form
   var username = req.body.username;
   var password = req.body.password;
-  var newUser = new User({
-    username: username,
-    password: password
+
+  bcrypt.hash(password, null, null, function(err, hash){
+    var newUser = new User({
+      username: username,
+      password: hash
+    });
+    newUser.save().then(function(user){
+        Users.add(user);
+        res.send(200, user);
+    });
   });
+
   // save info to database in users table
-  newUser.save().then(function(user){
-    Users.add(user);
-    //res.redirect('/');
-    res.send(200, user);
-    // we redirect to /links
-  });
+  // res.redirect('/');
 });
 
 // LOGIN
 app.get('/login', function(req, res){
   res.render('login');
+});
+app.post('/login', function(req, res){
+  var username = req.body.username;
+  var password = req.body.password;
+  // Get the user information from the database w/ fetch
+  new User({username: username})
+    .fetch()
+    .then(function(model){
+      console.log(model);
+      console.log(model.get('password'));
+      bcrypt.compare(password, model.get('password'), function(err, result){
+
+          console.log(model);
+          console.log(password);
+          console.log(err);
+          console.log(res);
+        if(res){
+          //logged in
+          res.redirect('/');
+        } else {
+
+        }
+      });
+    })
+    // then run bcrypt.compare on it
+    // if compare sends back true, then successful login
+    // redirect to /
 });
 
 
