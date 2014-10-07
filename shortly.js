@@ -122,7 +122,7 @@ app.post('/login', function(req, res){
           console.log(password);
           console.log(err);
           console.log(res);
-        if(res){
+        if(result){
           //logged in
           res.redirect('/');
         } else {
