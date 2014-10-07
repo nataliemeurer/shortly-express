@@ -94,7 +94,7 @@ app.post('/signup', function(req, res){
   // save info to database in users table
   newUser.save().then(function(user){
     Users.add(user);
-    res.redirect('/');
+    //res.redirect('/');
     res.send(200, user);
     // we redirect to /links
   });
