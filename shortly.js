@@ -83,7 +83,28 @@ app.get('/signup', function(req, res){
   res.render('signup');
 });
 
+app.post('/signup', function(req, res){
+  // get info from the form
+  var username = req.body.username;
+  var password = req.body.password;
+  var newUser = new User({
+    username: username,
+    password: password
+  });
+  // save info to database in users table
+  newUser.save().then(function(user){
+    Users.add(user);
+    res.redirect('/');
+    res.send(200, user);
+    // we redirect to /links
+  });
+});
+
 // LOGIN
+app.get('/login', function(req, res){
+  res.render('login');
+});
+
 
 
 
