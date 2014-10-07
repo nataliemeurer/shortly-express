@@ -94,8 +94,8 @@ app.post('/signup', function(req, res){
       password: hash
     });
     newUser.save().then(function(user){
-        Users.add(user);
-        res.send(200, user);
+      Users.add(user);
+      res.send(200, user);
     });
   });
 
