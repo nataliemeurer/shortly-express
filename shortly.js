@@ -2,7 +2,9 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var bcrypt = require('bcrypt-nodejs');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -22,26 +24,41 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(cookieParser('parseit'));
+app.use(session({
+  secret: 'smellycat'
+}));
 
+var restrict = function(req, res, next) {
+  console.log("SESSION USER: ", req.session.user);
+  if (req.session.user) {
+    console.log("ACCESS GRANTED");
+    next();
+  } else {
+    console.log("ACCESS DENIED");
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+};
 
-app.get('/',
+app.get('/', restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create',
+app.get('/create', restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links',
+app.get('/links', restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links',
+app.post('/links', restrict,
 function(req, res) {
   var uri = req.body.url;
 
@@ -93,14 +110,15 @@ app.post('/signup', function(req, res){
       username: username,
       password: hash
     });
+    // once pass is hashed --> save to DB, then add model to user collection and reroute
     newUser.save().then(function(user){
       Users.add(user);
+      res.redirect('/');
       res.send(200, user);
     });
   });
 
   // save info to database in users table
-  // res.redirect('/');
 });
 
 // LOGIN
@@ -114,28 +132,35 @@ app.post('/login', function(req, res){
   new User({username: username})
     .fetch()
     .then(function(model){
-      console.log(model);
-      console.log(model.get('password'));
+      if( model === null ){
+        console.log("USERNAME IS NOT IN THE FUCKING DATABASE");
+        res.redirect('/login');
+        res.send(404);
+      }
       bcrypt.compare(password, model.get('password'), function(err, result){
-
-          console.log(model);
-          console.log(password);
-          console.log(err);
-          console.log(res);
         if(result){
-          //logged in
-          res.redirect('/');
+          req.session.regenerate(function(){
+            req.session.user = username;
+            console.log(req.session.user);
+            res.redirect('/');
+          });
+          //util.createSession(req, res, username);
         } else {
-
+          res.redirect('/login');
+          res.send(404);
         }
       });
-    })
+    });
     // then run bcrypt.compare on it
     // if compare sends back true, then successful login
     // redirect to /
 });
 
-
+app.post('/logout', function(req, res){
+  req.session.destroy(function(){
+    res.redirect('/login');
+  });
+});
 
 
 /************************************************************/
