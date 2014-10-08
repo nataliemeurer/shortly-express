@@ -113,8 +113,11 @@ app.post('/signup', function(req, res){
     // once pass is hashed --> save to DB, then add model to user collection and reroute
     newUser.save().then(function(user){
       Users.add(user);
-      res.redirect('/');
-      res.send(200, user);
+      req.session.regenerate(function(){
+        req.session.user = username;
+        res.redirect('/');
+        res.send(200, user);
+      });
     });
   });
 
